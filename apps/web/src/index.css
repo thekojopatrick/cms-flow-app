@@ -10,7 +10,7 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950 overscroll-none;
+  @apply overscroll-none bg-transparent dark:bg-gray-950;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
@@ -54,6 +54,7 @@ body {
 }
 
 :root {
+  --header-height: calc(var(--spacing) * 12 + 1px);
   --base-50: oklch(0.9824 0.0013 286.38);
   --base-100: oklch(0.967 0.0014 285.97);
   --base-200: oklch(0.9201 0.0018 285.92);
@@ -103,7 +104,7 @@ body {
   --chart-3: var(--primary-400);
   --chart-4: var(--primary-300);
   --chart-5: var(--primary-100);
-  --radius: 1rem;
+  --radius: 0.75rem;
   --sidebar: var(--base-100);
   --sidebar-foreground: var(--base-800);
   --sidebar-primary: var(--primary-800);
@@ -211,18 +212,17 @@ body {
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
-
 @layer base {  
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
   
 }
 
-.theme-default,
+/* .theme-default,
 .theme-default-scaled {
   --primary: var(--color-neutral-600);
   --primary-foreground: var(--color-neutral-50);
@@ -231,4 +231,4 @@ body {
     --primary: var(--color-neutral-500);
     --primary-foreground: var(--color-neutral-50);
   }
-}
+} */
