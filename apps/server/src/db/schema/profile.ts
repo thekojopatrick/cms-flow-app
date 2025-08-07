@@ -1,13 +1,14 @@
-// users.ts
+// profiles.ts
 import { sqliteTable, text, integer, blob } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
-import { employeeProfiles } from './employee';
+import { employeeProfiles } from './onboarding';
 import { vendors } from './vendors';
 import { clients } from './clients';
+import { user } from './auth';
 
-export const users = sqliteTable('profiles', {
-  id: text('id').primaryKey().$default(() => crypto.randomUUID()),
+export const profiles = sqliteTable('profiles', {
+  id: text('id').references(() => user.id).notNull(),
   email: text('email').unique().notNull(),
   passwordHash: text('password_hash').notNull(),
   firstName: text('first_name').notNull(),
@@ -30,15 +31,15 @@ export const companies = sqliteTable('companies', {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ one }) => ({
+export const profilesRelations = relations(profiles, ({ one }) => ({
   company: one(companies, {
-    fields: [users.companyId],
+    fields: [profiles.companyId],
     references: [companies.id],
   }),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
-  users: many(users),
+  profiles: many(profiles),
   employees: many(employeeProfiles),
   vendors: many(vendors),
   clients: many(clients),

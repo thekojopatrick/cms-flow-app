@@ -1,27 +1,28 @@
-import { pgTable } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, foreignKey } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { companies } from './profile'; // Assuming 'companies' schema exists and is imported.
 
-export const entityStatusEnum = pgEnum('entity_status', ['active', 'inactive', 'pending', 'prospect']);
-
-export const vendors = pgTable('vendors', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  companyId: uuid('company_id').references(() => companies.id).notNull(),
-  vendorName: varchar('vendor_name', { length: 255 }).notNull(),
-  businessType: varchar('business_type', { length: 100 }),
+// vendors.ts
+export const vendors = sqliteTable('vendors', {
+  id: text('id').primaryKey(), // Storing UUIDs as text
+  companyId: text('company_id').references(() => companies.id).notNull(),
+  vendorName: text('vendor_name', { length: 255 }).notNull(),
+  businessType: text('business_type', { length: 100 }),
   primaryService: text('primary_service'),
-  website: varchar('website', { length: 255 }),
-  status: entityStatusEnum('status').default('active'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  website: text('website', { length: 255 }),
+  status: text('status', { enum: ['active', 'inactive', 'pending', 'prospect'] }).default('active'), // Using text with enum constraint
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`), // Storing timestamps as text
+  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const vendorContacts = pgTable('vendor_contacts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  vendorId: uuid('vendor_id').references(() => vendors.id).notNull(),
-  firstName: varchar('first_name', { length: 100 }).notNull(),
-  lastName: varchar('last_name', { length: 100 }).notNull(),
-  email: varchar('email', { length: 255 }),
-  phone: varchar('phone', { length: 20 }),
-  role: varchar('role', { length: 100 }),
-  isPrimary: boolean('is_primary').default(false),
-  createdAt: timestamp('created_at').defaultNow(),
+export const vendorContacts = sqliteTable('vendor_contacts', {
+  id: text('id').primaryKey(),
+  vendorId: text('vendor_id').references(() => vendors.id).notNull(),
+  firstName: text('first_name', { length: 100 }).notNull(),
+  lastName: text('last_name', { length: 100 }).notNull(),
+  email: text('email', { length: 255 }),
+  phone: text('phone', { length: 20 }),
+  role: text('role', { length: 100 }),
+  isPrimary: integer('is_primary', { mode: 'boolean' }).default(false), // Using integer for boolean
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
 });
