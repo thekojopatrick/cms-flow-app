@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/utils/trpc";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export default function OnboardingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,20 +42,24 @@ export default function OnboardingPage() {
   >("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: employees, refetch } = api.onboarding.getEmployees.useQuery({
-    status: statusFilter === "all" ? undefined : statusFilter,
-  });
+  const { data: employees, refetch } = useQuery(
+    api.onboarding.getEmployees.queryOptions({
+      status: statusFilter === "all" ? undefined : statusFilter,
+    })
+  );
 
-  const createEmployeeMutation = api.onboarding.createEmployee.useMutation({
-    onSuccess: () => {
-      toast.success("New hire added successfully!");
-      setIsCreateDialogOpen(false);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const createEmployeeMutation = useMutation(
+    api.onboarding.createEmployee.mutationOptions({
+      onSuccess: () => {
+        toast.success("New hire added successfully!");
+        setIsCreateDialogOpen(false);
+        refetch();
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    })
+  );
 
   const [formData, setFormData] = useState({
     email: "",
@@ -68,14 +74,19 @@ export default function OnboardingPage() {
 
   const handleCreateEmployee = (e: React.FormEvent) => {
     e.preventDefault();
-    createEmployeeMutation.mutate(formData);
+    createEmployeeMutation.mutate({
+      ...formData,
+      userId: "1",
+      companyId: "1",
+    });
   };
 
   const filteredEmployees =
     employees?.filter((employee) => {
       const searchLower = searchTerm.toLowerCase();
-      const fullName =
-        `${employee.user?.firstName} ${employee.user?.lastName}`.toLowerCase();
+      const fullName = `${employee.firstName?.toLowerCase() || ""} ${
+        employee.lastName?.toLowerCase() || ""
+      }`.toLowerCase();
       const position = employee.position?.toLowerCase() || "";
       const department = employee.department?.toLowerCase() || "";
 
@@ -362,13 +373,14 @@ export default function OnboardingPage() {
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-semibold text-blue-800">
-                        {employee.user?.firstName?.[0]}
-                        {employee.user?.lastName?.[0]}
+                        {employee.firstName?.[0]?.toUpperCase() || ""}
+                        {employee.lastName?.[0]?.toUpperCase() || ""}
                       </span>
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">
-                        {employee.user?.firstName} {employee.user?.lastName}
+                        {employee.firstName?.toUpperCase() || ""}{" "}
+                        {employee.lastName?.toUpperCase() || ""}
                       </p>
                       <p className="text-sm text-gray-600">
                         {employee.position} • {employee.department}
@@ -383,9 +395,9 @@ export default function OnboardingPage() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
-                      {getStatusIcon(employee.status)}
-                      <Badge className={getStatusColor(employee.status)}>
-                        {employee.status.replace("_", " ")}
+                      {getStatusIcon(employee.status || "")}
+                      <Badge className={getStatusColor(employee.status || "")}>
+                        {employee.status?.replace("_", " ")}
                       </Badge>
                     </div>
                     <Button variant="outline" size="sm">

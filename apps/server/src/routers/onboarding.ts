@@ -24,9 +24,11 @@ export const onboardingRouter = router({
   createEmployee: protectedProcedure
     .input(z.object({
       userId: z.string(),
+      firstName: z.string(),
+      lastName: z.string(),
       companyId: z.string(),
       employeeId: z.string().optional(),
-      startDate: z.date(),
+      startDate: z.string(),
       department: z.string(),
       position: z.string(),
       managerId: z.string().optional(),
