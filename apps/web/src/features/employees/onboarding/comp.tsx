@@ -36,6 +36,7 @@ import { api } from "@/utils/trpc";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import SectionStatsCard from "@/components/section-stats-card";
 import { IconTrendingUp } from "@tabler/icons-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function OnboardingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +44,7 @@ export default function OnboardingPage() {
     "all" | "pending" | "in_progress" | "completed"
   >("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-
+  const { data: session, isPending } = authClient.useSession();
   const { data: employees, refetch } = useQuery(
     api.onboarding.getEmployees.queryOptions({
       status: statusFilter === "all" ? undefined : statusFilter,
@@ -78,8 +79,7 @@ export default function OnboardingPage() {
     e.preventDefault();
     createEmployeeMutation.mutate({
       ...formData,
-      userId: "1",
-      companyId: "1",
+      userId: session?.user?.id ?? "",
     });
   };
 
