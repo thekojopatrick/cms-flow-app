@@ -1,5 +1,6 @@
-'use client'
-import * as React from "react"
+"use client";
+
+import * as React from "react";
 import {
   IconCamera,
   IconChartBar,
@@ -16,12 +17,12 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -30,7 +31,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth-client";
+import { Skeleton } from "./ui/skeleton";
 
 const data = {
   user: {
@@ -41,28 +44,28 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "Onboarding",
+      url: "/dashboard/onboarding",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
-      url: "#",
+      title: "Clients",
+      url: "/dashboard/clients",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
+      title: "Vendors",
+      url: "/dashboard/vendors",
+      icon: IconUsers,
     },
     {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
+      title: "Projects",
+      url: "/dashboard/projects",
+      icon: IconFolder,
     },
   ],
   navClouds: [
@@ -147,9 +150,16 @@ const data = {
       icon: IconFileWord,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session, isPending } = authClient.useSession();
+  const user = {
+    name: session?.user?.name ?? "Shadcn",
+    email: session?.user?.email ?? "m@example.com",
+    avatar: session?.user?.image ?? "/avatars/shadcn.jpg",
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -173,8 +183,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {isPending ? (
+          <Skeleton className="h-9 w-24" />
+        ) : (
+          <NavUser user={user} />
+        )}
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

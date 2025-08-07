@@ -27,6 +27,7 @@ export function SiteHeader() {
           {links.map(({ to, label }) => {
             return (
               <Button
+                key={label}
                 variant="ghost"
                 asChild
                 size="sm"
