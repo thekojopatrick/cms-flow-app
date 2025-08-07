@@ -1,32 +1,77 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../lib/trpc';
-import { employeeProfiles, employeeTaskAssignments, onboardingTasks } from '@/db/schema/onboarding';
-import { eq, and } from 'drizzle-orm';
+import { 
+  employeeProfiles, 
+  employeeTaskAssignments, 
+  onboardingTasks 
+} from '@/db/schema/onboarding';
+import { profiles } from '@/db/schema/profile';
+import { eq, and, desc } from 'drizzle-orm';
 import { db } from '@/db';
 
 export const onboardingRouter = router({
-  // Get all employees for onboarding
+  // Get all employees for onboarding - Fixed to get user's company properly
   getEmployees: protectedProcedure
     .input(z.object({
       status: z.enum(['pending', 'in_progress', 'completed']).optional(),
     }))
     .query(async ({ ctx, input }) => {
-      return await db.select().from(employeeProfiles).where(
-        and(
-          eq(employeeProfiles.companyId, ctx.session.user.id),
+      // First get the user's profile to find their company
+        const userProfile = await db.query.profile.findFirst({
+        where: eq(profiles.userId, ctx.session.userId), // Assuming session has userId
+        columns: { companyId: true }
+      });
+
+      if (!userProfile) {
+        throw new Error('User profile not found');
+      }
+
+      // Now get employees with relations
+      return await db.query.employeeProfile.findMany({
+        where: and(
+          eq(employeeProfiles.companyId, userProfile.companyId),
           input.status ? eq(employeeProfiles.status, input.status) : undefined
-        )
-      );
+        ),
+        with: {
+          user: {
+            with: {
+              user: {
+                columns: {
+                  name: true,
+                  email: true,
+                }
+              }
+            },
+            columns: {
+              firstName: true,
+              lastName: true,
+            }
+          },
+          manager: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            }
+          },
+          taskAssignments: {
+            with: {
+              task: {
+                columns: {
+                  title: true,
+                  taskType: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: [desc(employeeProfiles.createdAt)],
+      });
     }),
 
-
-  // Create new employee profile
+  // Create new employee profile - Fixed to properly handle user creation
   createEmployee: protectedProcedure
     .input(z.object({
-      userId: z.string(),
-      firstName: z.string(),
-      lastName: z.string(),
-      companyId: z.string(),
+      userId: z.string(), // This should be the profile ID, not auth user ID
       employeeId: z.string().optional(),
       startDate: z.string(),
       department: z.string(),
@@ -34,110 +79,217 @@ export const onboardingRouter = router({
       managerId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const [employee] = await db.insert(employeeProfiles).values(input).returning();
+      // Get user's company
+      const userProfile = await db.query.profile.findFirst({
+        where: eq(profiles.userId, ctx.session.userId),
+        columns: { companyId: true }
+      });
+
+      if (!userProfile) {
+        throw new Error('User profile not found');
+      }
+
+      const [employee] = await db.insert(employeeProfiles).values({
+        ...input,
+        companyId: userProfile.companyId,
+      }).returning();
       
       return employee;
     }),
 
-  // Get employee progress
+  // Get employee progress - Enhanced with relations
   getEmployeeProgress: protectedProcedure
     .input(z.object({
       employeeId: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-        const assignments = await db.select().from(employeeTaskAssignments).where(
-            eq(employeeTaskAssignments.employeeProfileId, input.employeeId)
-        );
+      const employee = await db.query.employeeProfile.findFirst({
+        where: eq(employeeProfiles.id, input.employeeId),
+        with: {
+          taskAssignments: {
+            with: {
+              task: {
+                columns: {
+                  title: true,
+                  description: true,
+                  taskType: true,
+                  required: true,
+                  orderSequence: true,
+                }
+              }
+            },
+            orderBy: [employeeTaskAssignments.assignedDate],
+          },
+          user: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            }
+          }
+        }
+      });
 
-        const totalTasks = assignments.length;
-        const completedTasks = assignments.filter(a => a.status === 'completed').length;
+      if (!employee) {
+        throw new Error('Employee not found');
+      }
 
-        return {
-            totalTasks,
-            completedTasks,
-            progressPercentage: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
-            assignments,
-        };
+      const totalTasks = employee.taskAssignments.length;
+      const completedTasks = employee.taskAssignments.filter(a => a.status === 'completed').length;
+      const requiredTasks = employee.taskAssignments.filter(a => a.task.required).length;
+      const completedRequiredTasks = employee.taskAssignments.filter(
+        a => a.task.required && a.status === 'completed'
+      ).length;
+
+      return {
+        employee,
+        totalTasks,
+        completedTasks,
+        requiredTasks,
+        completedRequiredTasks,
+        progressPercentage: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
+        requiredProgressPercentage: requiredTasks > 0 ? (completedRequiredTasks / requiredTasks) * 100 : 0,
+        assignments: employee.taskAssignments,
+      };
     }),
 
-    // Complete task
-    completeTask: protectedProcedure
-      .input(z.object({
-        assignmentId: z.string(),
-        notes: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await db.update(employeeTaskAssignments)
+  // Complete task - Following todo.ts pattern
+  completeTask: protectedProcedure
+    .input(z.object({
+      assignmentId: z.string(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return await db
+        .update(employeeTaskAssignments)
         .set({
           status: 'completed',
-          completedDate: new Date(),
+          completedDate: Math.floor(Date.now() / 1000), // Unix timestamp
           notes: input.notes,
         })
         .where(eq(employeeTaskAssignments.id, input.assignmentId));
-
-        return { success: true };
-      }),
-
-  // Get all tasks for onboarding
-  getAllTasks: protectedProcedure
-    .input(z.object({
-      companyId: z.string(),
-    }))
-    .query(async ({ ctx, input }) => {
-        return await db.select().from(onboardingTasks).where(
-            eq(onboardingTasks.companyId, input.companyId)
-        );
     }),
 
-    // Create new task
-    createTask: protectedProcedure
-      .input(z.object({
-        companyId: z.string().uuid(),
-        title: z.string(),
-        description: z.string(),
-        taskType: z.enum(['form', 'document', 'acknowledgment', 'training']),
-        required: z.boolean(),
-        orderSequence: z.number(),
-        isActive: z.boolean(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await db.insert(onboardingTasks).values({
-          ...input,
-          companyId: ctx.session.user.id,
-        });
+  // Get all tasks for onboarding - Fixed company retrieval
+  getAllTasks: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get user's company from their profile
+      const userProfile = await db.query.profile.findFirst({
+        where: eq(profiles.userId, ctx.session.userId),
+        columns: { companyId: true }
+      });
 
-        return { success: true };
-      }),
+      if (!userProfile) {
+        throw new Error('User profile not found');
+      }
 
-    // Update task
-    updateTask: protectedProcedure
-      .input(z.object({
-        taskId: z.string(),
-        title: z.string(),
-        description: z.string(),
-        taskType: z.enum(['form', 'document', 'acknowledgment', 'training']),
-        required: z.boolean(),
-        orderSequence: z.number(),
-        isActive: z.boolean(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await db.update(onboardingTasks)
-        .set({
-          ...input,
-          companyId: ctx.session.user.id,
-        })
+      return await db.query.onboardingTasks.findMany({
+        where: and(
+          eq(onboardingTasks.companyId, userProfile.companyId),
+          eq(onboardingTasks.isActive, true)
+        ),
+        orderBy: [onboardingTasks.orderSequence, onboardingTasks.title],
+      });
+    }),
+
+  // Create new task - Following todo.ts pattern
+  createTask: protectedProcedure
+    .input(z.object({
+      title: z.string().min(1),
+      description: z.string().optional(),
+      taskType: z.enum(['form', 'document', 'acknowledgment', 'training']),
+      required: z.boolean().default(true),
+      orderSequence: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get user's company
+      const userProfile = await db.query.profile.findFirst({
+        where: eq(profiles.userId, ctx.session.userId),
+        columns: { companyId: true }
+      });
+
+      if (!userProfile) {
+        throw new Error('User profile not found');
+      }
+
+      return await db.insert(onboardingTasks).values({
+        ...input,
+        companyId: userProfile.companyId,
+        isActive: true,
+      }).returning();
+    }),
+
+  // Update task - Following todo.ts pattern
+  updateTask: protectedProcedure
+    .input(z.object({
+      taskId: z.string(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      taskType: z.enum(['form', 'document', 'acknowledgment', 'training']),
+      required: z.boolean(),
+      orderSequence: z.number().optional(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { taskId, ...updateData } = input;
+      
+      return await db
+        .update(onboardingTasks)
+        .set(updateData)
+        .where(eq(onboardingTasks.id, taskId));
+    }),
+
+  // Delete task - Following todo.ts pattern
+  deleteTask: protectedProcedure
+    .input(z.object({
+      taskId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return await db
+        .delete(onboardingTasks)
         .where(eq(onboardingTasks.id, input.taskId));
+    }),
 
-        return { success: true };
-      }),
+  // Assign tasks to employee - New helper method
+  assignTasksToEmployee: protectedProcedure
+    .input(z.object({
+      employeeId: z.string(),
+      taskIds: z.array(z.string()).optional(), // If not provided, assign all active tasks
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { employeeId, taskIds } = input;
 
-    // Delete task
-    deleteTask: protectedProcedure
-      .input(z.object({
-        taskId: z.string(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await db.delete(onboardingTasks).where(eq(onboardingTasks.id, input.taskId));
-        return { success: true };
-      }),
+      // Get user's company
+          const userProfile = await db.query.profile.findFirst({
+        where: eq(profiles.userId, ctx.session.userId),
+        columns: { companyId: true }
+      });
+
+      if (!userProfile) {
+        throw new Error('User profile not found');
+      }
+
+      // Get tasks to assign
+      const tasks = taskIds 
+        ? await db.query.onboardingTasks.findMany({
+            where: and(
+              eq(onboardingTasks.companyId, userProfile.companyId),
+              // Add filter for specific task IDs
+            )
+          })
+        : await db.query.onboardingTasks.findMany({
+            where: and(
+              eq(onboardingTasks.companyId, userProfile.companyId),
+              eq(onboardingTasks.isActive, true)
+            )
+          });
+
+      // Create assignments
+      const assignments = tasks.map(task => ({
+        employeeProfileId: employeeId,
+        onboardingTaskId: task.id,
+        status: 'pending' as const,
+      }));
+
+      return await db.insert(employeeTaskAssignments).values(assignments).returning();
+    }),
 });

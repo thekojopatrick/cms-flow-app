@@ -1,12 +1,11 @@
-// onboarding.ts
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { relations } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
-import { profiles } from './profile';
-import { companies } from './profile';
+import { profiles, companies } from './profile';
 
 export const employeeProfiles = sqliteTable('employee_profiles', {
   id: text('id').primaryKey().$default(() => crypto.randomUUID()),
-  userId: text('user_id').references(() => profiles.id),
+  userId: text('user_id').references(() => profiles.id).notNull(), // Reference to profiles, not auth user
   companyId: text('company_id').references(() => companies.id).notNull(),
   employeeId: text('employee_id'),
   startDate: text('start_date'), // Store as YYYY-MM-DD string
@@ -39,3 +38,40 @@ export const employeeTaskAssignments = sqliteTable('employee_task_assignments', 
   completedDate: integer('completed_date', { mode: 'timestamp' }),
   notes: text('notes'),
 });
+
+// Relations
+export const employeeProfilesRelations = relations(employeeProfiles, ({ one, many }) => ({
+  user: one(profiles, {
+    fields: [employeeProfiles.userId],
+    references: [profiles.id],
+  }),
+  company: one(companies, {
+    fields: [employeeProfiles.companyId],
+    references: [companies.id],
+  }),
+  manager: one(profiles, {
+    fields: [employeeProfiles.managerId],
+    references: [profiles.id],
+    relationName: "manager",
+  }),
+  taskAssignments: many(employeeTaskAssignments),
+}));
+
+export const onboardingTasksRelations = relations(onboardingTasks, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [onboardingTasks.companyId],
+    references: [companies.id],
+  }),
+  assignments: many(employeeTaskAssignments),
+}));
+
+export const employeeTaskAssignmentsRelations = relations(employeeTaskAssignments, ({ one }) => ({
+  employeeProfile: one(employeeProfiles, {
+    fields: [employeeTaskAssignments.employeeProfileId],
+    references: [employeeProfiles.id],
+  }),
+  task: one(onboardingTasks, {
+    fields: [employeeTaskAssignments.onboardingTaskId],
+    references: [onboardingTasks.id],
+  }),
+}));
