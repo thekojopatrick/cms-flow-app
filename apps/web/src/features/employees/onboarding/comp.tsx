@@ -34,6 +34,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/utils/trpc";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import SectionStatsCard from "@/components/section-stats-card";
+import { IconTrendingUp } from "@tabler/icons-react";
 
 export default function OnboardingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -134,12 +136,12 @@ export default function OnboardingPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center px-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900">
             New Hire Onboarding
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-sm">
             Manage and track employee onboarding progress
           </p>
         </div>
@@ -156,7 +158,7 @@ export default function OnboardingPage() {
             </DialogHeader>
             <form onSubmit={handleCreateEmployee} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
@@ -170,7 +172,7 @@ export default function OnboardingPage() {
                     required
                   />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
@@ -185,7 +187,7 @@ export default function OnboardingPage() {
                   />
                 </div>
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -198,7 +200,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="position">Position</Label>
                   <Input
                     id="position"
@@ -212,7 +214,7 @@ export default function OnboardingPage() {
                     required
                   />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <Label htmlFor="department">Department</Label>
                   <Input
                     id="department"
@@ -227,7 +229,7 @@ export default function OnboardingPage() {
                   />
                 </div>
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
                   id="startDate"
@@ -242,7 +244,7 @@ export default function OnboardingPage() {
                   required
                 />
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="employeeId">Employee ID (Optional)</Label>
                 <Input
                   id="employeeId"
@@ -270,147 +272,150 @@ export default function OnboardingPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Employees
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <SectionStatsCard
+          title="Total Employees"
+          value={stats.total.toString()}
+          trend="up"
+          trendValue="+12.5%"
+          trendIcon={<IconTrendingUp />}
+          description="Total number of employees"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <AlertCircle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
+        <SectionStatsCard
+          title="Pending"
+          value={stats.pending.toString()}
+          trend="up"
+          trendValue="+12.5%"
+          trendIcon={<IconTrendingUp />}
+          description="Total number of employees"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
+        <SectionStatsCard
+          title="In Progress"
+          value={stats.inProgress.toString()}
+          trend="up"
+          trendValue="+12.5%"
+          trendIcon={<IconTrendingUp />}
+          description="Total number of employees"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
+        <SectionStatsCard
+          title="Completed"
+          value={stats.completed.toString()}
+          trend="up"
+          trendValue="+12.5%"
+          trendIcon={<IconTrendingUp />}
+          description="Total number of employees"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="px-4">
+        <Card className="@container/card shadow-none">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={(value: any) => setStatusFilter(value)}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(value: any) => setStatusFilter(value)}
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Employee List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Employees ({filteredEmployees.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredEmployees.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                No employees found
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm
-                  ? "Try adjusting your search terms."
-                  : "Get started by adding a new hire."}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredEmployees.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-blue-800">
-                        {employee.firstName?.[0]?.toUpperCase() || ""}
-                        {employee.lastName?.[0]?.toUpperCase() || ""}
-                      </span>
+      <div className="px-4">
+        <Card className="@container/card shadow-none">
+          <CardHeader>
+            <CardTitle>New Employees ({filteredEmployees.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredEmployees.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                  No employees found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm
+                    ? "Try adjusting your search terms."
+                    : "Get started by adding a new hire."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredEmployees.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-semibold text-blue-800">
+                          {employee.firstName?.[0]?.toUpperCase() || ""}
+                          {employee.lastName?.[0]?.toUpperCase() || ""}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {employee.firstName?.toUpperCase() || ""}{" "}
+                          {employee.lastName?.toUpperCase() || ""}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {employee.position} • {employee.department}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Started:{" "}
+                          {employee.startDate
+                            ? format(
+                                new Date(employee.startDate),
+                                "MMM dd, yyyy"
+                              )
+                            : "Not set"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {employee.firstName?.toUpperCase() || ""}{" "}
-                        {employee.lastName?.toUpperCase() || ""}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {employee.position} • {employee.department}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Started:{" "}
-                        {employee.startDate
-                          ? format(new Date(employee.startDate), "MMM dd, yyyy")
-                          : "Not set"}
-                      </p>
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(employee.status || "")}
+                        <Badge
+                          className={getStatusColor(employee.status || "")}
+                        >
+                          {employee.status?.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Progress
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(employee.status || "")}
-                      <Badge className={getStatusColor(employee.status || "")}>
-                        {employee.status?.replace("_", " ")}
-                      </Badge>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Progress
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -18,7 +18,7 @@ export const onboardingRouter = router({
     .query(async ({ ctx, input }) => {
       // First get the user's profile to find their company
         const userProfile = await db.query.profile.findFirst({
-        where: eq(profiles.userId, ctx.session.userId), // Assuming session has userId
+        where: eq(profiles.userId, ctx.session.user.id), // Assuming session has userId
         columns: { companyId: true }
       });
 
@@ -81,7 +81,7 @@ export const onboardingRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Get user's company
       const userProfile = await db.query.profile.findFirst({
-        where: eq(profiles.userId, ctx.session.userId),
+        where: eq(profiles.userId, ctx.session.user.id),
         columns: { companyId: true }
       });
 
@@ -163,7 +163,7 @@ export const onboardingRouter = router({
         .update(employeeTaskAssignments)
         .set({
           status: 'completed',
-          completedDate: Math.floor(Date.now() / 1000), // Unix timestamp
+          completedDate: new Date(),
           notes: input.notes,
         })
         .where(eq(employeeTaskAssignments.id, input.assignmentId));
@@ -174,7 +174,7 @@ export const onboardingRouter = router({
     .query(async ({ ctx }) => {
       // Get user's company from their profile
       const userProfile = await db.query.profile.findFirst({
-        where: eq(profiles.userId, ctx.session.userId),
+        where: eq(profiles.userId, ctx.session.user.id),
         columns: { companyId: true }
       });
 
@@ -203,7 +203,7 @@ export const onboardingRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Get user's company
       const userProfile = await db.query.profile.findFirst({
-        where: eq(profiles.userId, ctx.session.userId),
+        where: eq(profiles.userId, ctx.session.user.id),
         columns: { companyId: true }
       });
 
@@ -260,7 +260,7 @@ export const onboardingRouter = router({
 
       // Get user's company
           const userProfile = await db.query.profile.findFirst({
-        where: eq(profiles.userId, ctx.session.userId),
+        where: eq(profiles.userId, ctx.session.user.id),
         columns: { companyId: true }
       });
 

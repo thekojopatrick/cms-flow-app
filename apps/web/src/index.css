@@ -24,8 +24,12 @@ body {
     --spacing: 0.222222rem;
   }
 
-  [data-slot="card"] {
+  /* [data-slot="card"] {
     --spacing: 0.16rem;
+  } */
+
+  [data-slot="input"] {
+    --spacing: 0.222222rem;
   }
 
   [data-slot="select-trigger"],
@@ -55,6 +59,12 @@ body {
 
 :root {
   --header-height: calc(var(--spacing) * 12 + 1px);
+  --radius: 0.6rem;
+  --text-lg: 1.05rem;
+  --text-base: 0.85rem;
+  --text-sm: 0.8rem;
+  --spacing: 0.222222rem;
+
   --base-50: oklch(0.9824 0.0013 286.38);
   --base-100: oklch(0.967 0.0014 285.97);
   --base-200: oklch(0.9201 0.0018 285.92);
@@ -212,14 +222,13 @@ body {
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
-@layer base {  
+@layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply text-foreground;
   }
-  
 }
 
 /* .theme-default,
